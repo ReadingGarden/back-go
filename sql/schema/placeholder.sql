@@ -1,0 +1,1 @@
+-- sqlc schema bootstrap placeholder.
