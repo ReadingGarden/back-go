@@ -14,6 +14,8 @@ type Config struct {
 	Port     string
 	Log      LogConfig
 	Database DatabaseConfig
+	Auth     AuthConfig
+	Email    EmailConfig
 	Swagger  SwaggerConfig
 }
 
@@ -38,6 +40,18 @@ type SwaggerConfig struct {
 	BasePath string
 }
 
+type AuthConfig struct {
+	JWTSecretKey    string
+	JWTAlgorithm    string
+	AccessTokenTTL  time.Duration
+	RefreshTokenTTL time.Duration
+}
+
+type EmailConfig struct {
+	Account  string
+	Password string
+}
+
 func Load() Config {
 	return Config{
 		AppEnv:  getEnv("APP_ENV", "local"),
@@ -50,11 +64,21 @@ func Load() Config {
 			Host:            getEnv("DB_HOST", "127.0.0.1"),
 			Port:            getEnv("DB_PORT", "3306"),
 			Name:            getEnv("DB_NAME", "reading_garden"),
-			User:            getEnv("DB_USER", "root"),
-			Password:        getEnv("DB_PASSWORD", ""),
+			User:            getEnv("DB_USER", "reading_garden"),
+			Password:        getEnv("DB_PASSWORD", "reading_garden"),
 			MaxOpenConns:    getEnvInt("DB_MAX_OPEN_CONNS", 10),
 			MaxIdleConns:    getEnvInt("DB_MAX_IDLE_CONNS", 5),
 			ConnMaxLifetime: getEnvDuration("DB_CONN_MAX_LIFETIME", 3*time.Minute),
+		},
+		Auth: AuthConfig{
+			JWTSecretKey:    getEnv("HS256_KEY", ""),
+			JWTAlgorithm:    getEnv("JWT_ALGORITHM", "HS256"),
+			AccessTokenTTL:  getEnvDuration("JWT_ACCESS_EXP_DELTA", 24*time.Hour),
+			RefreshTokenTTL: getEnvDuration("JWT_REFRESH_EXP_DELTA", 60*7*24*time.Hour),
+		},
+		Email: EmailConfig{
+			Account:  getEnv("EMAIL_ACCOUNT", ""),
+			Password: getEnv("EMAIL_PASSWORD", ""),
 		},
 		Swagger: SwaggerConfig{
 			Enabled:  getEnvBool("SWAGGER_ENABLED", true),

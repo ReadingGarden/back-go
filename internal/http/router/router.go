@@ -9,8 +9,11 @@ import (
 
 	"github.com/ReadingGarden/back-go/docs"
 	authhandler "github.com/ReadingGarden/back-go/internal/auth/handler"
+	authrepo "github.com/ReadingGarden/back-go/internal/auth/repository"
+	authservice "github.com/ReadingGarden/back-go/internal/auth/service"
 	bookhandler "github.com/ReadingGarden/back-go/internal/book/handler"
 	"github.com/ReadingGarden/back-go/internal/config"
+	"github.com/ReadingGarden/back-go/internal/db"
 	gardenhandler "github.com/ReadingGarden/back-go/internal/garden/handler"
 	memohandler "github.com/ReadingGarden/back-go/internal/memo/handler"
 	pushhandler "github.com/ReadingGarden/back-go/internal/push/handler"
@@ -25,6 +28,20 @@ func New(cfg config.Config) (*gin.Engine, error) {
 	if err := engine.SetTrustedProxies(nil); err != nil {
 		return nil, err
 	}
+
+	sqlDB, err := db.Open(cfg.Database)
+	if err != nil {
+		return nil, err
+	}
+
+	authRepository := authrepo.NewMySQLRepository(sqlDB)
+	tokenService := authservice.NewTokenService(authRepository, cfg.Auth)
+	authDomainService := authservice.New(
+		authRepository,
+		tokenService,
+		authservice.NewSMTPMailer(cfg.Email),
+		authservice.NewAfterFuncResetScheduler(authRepository),
+	)
 
 	engine.GET("/healthz", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
@@ -42,7 +59,7 @@ func New(cfg config.Config) (*gin.Engine, error) {
 	}
 
 	apiV1 := engine.Group("/api/v1")
-	authhandler.RegisterRoutes(apiV1.Group("/auth"))
+	authhandler.RegisterRoutes(apiV1.Group("/auth"), authDomainService)
 	gardenhandler.RegisterRoutes(apiV1.Group("/garden"))
 	bookhandler.RegisterRoutes(apiV1.Group("/book"))
 	memohandler.RegisterRoutes(apiV1.Group("/memo"))

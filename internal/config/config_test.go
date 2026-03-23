@@ -47,6 +47,12 @@ func TestLoadDefaults(t *testing.T) {
 	if cfg.Database.Name != "reading_garden" {
 		t.Fatalf("Database.Name = %q, want %q", cfg.Database.Name, "reading_garden")
 	}
+	if cfg.Database.User != "reading_garden" {
+		t.Fatalf("Database.User = %q, want %q", cfg.Database.User, "reading_garden")
+	}
+	if cfg.Database.Password != "reading_garden" {
+		t.Fatalf("Database.Password = %q, want %q", cfg.Database.Password, "reading_garden")
+	}
 	if cfg.Database.MaxOpenConns != 10 {
 		t.Fatalf("Database.MaxOpenConns = %d, want %d", cfg.Database.MaxOpenConns, 10)
 	}

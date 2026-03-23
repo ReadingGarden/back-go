@@ -1,0 +1,96 @@
+goal: >
+  Replace the Django auth domain in `back/` with a Go/Gin implementation first,
+  while preserving the current Django runtime behavior exactly.
+
+constraints:
+  - The source of truth is the full Django runtime execution path for the auth domain, not only individual view files.
+  - The initial migration scope is the entire member/auth domain only.
+  - Do not improve, clean up, redesign, or normalize behavior during this phase.
+  - Language and framework may change to Go and Gin, but observable behavior must remain identical.
+  - Preserve request paths, methods, headers, cookies, request bodies, response bodies, status codes, nullable fields, and error messages.
+  - Preserve validation order and failure behavior exactly as Django currently behaves.
+  - Preserve side effects exactly, including DB writes, token issuance/storage, mail sending, and garden creation on signup if Django currently performs it.
+  - Reuse the existing DB schema, columns, and token storage rules exactly as Django uses them.
+  - Use the same external service accounts/configuration required by the Django auth flows during verification.
+  - During this phase, only auth-related routes need to be implemented in Go; coexistence routing with Django is out of scope.
+  - Other domains such as book, garden, memo, and push are out of scope until auth parity is complete.
+  - The deployment approach is server replacement after development completion, not live partial coexistence.
+  - Resource usage must remain conservative for a single EC2 micro instance.
+
+acceptance_criteria:
+  - >
+    For every auth endpoint currently implemented by Django, the Go server exposes the same contract and behavior:
+    `create_user`, `login`, `logout`, `refresh`, `delete_user`, `find_password`, `auth_check`,
+    `update_password_no_token`, `update_password`, `get_user`, and `update_user`.
+  - >
+    For identical requests, Django and Go produce the same HTTP status code, JSON keys, JSON value shapes,
+    nullable handling, and error messages.
+  - >
+    For identical requests, Django and Go produce the same HTTP-level outputs, including relevant headers,
+    `Set-Cookie`, cookie attributes, authorization-related behavior, and expiry semantics.
+  - >
+    Non-HTTP outputs also match Django behavior, including mail subject/body, password-reset link format,
+    token TTL rules, and persisted token artifacts.
+  - >
+    Side effects match exactly, including user creation/deletion/update, related garden creation, password reset flows,
+    and any other DB mutations triggered by the auth domain.
+  - >
+    Verification is done by contract tests that compare Django and Go for the same inputs across success and failure cases.
+  - >
+    Behavior that appears awkward or buggy must still be copied first if it reflects current Django runtime behavior.
+
+ontology_schema:
+  name: AuthDomainParity
+  description: Exact Django-to-Go auth domain parity specification for ReadingGarden.
+  fields:
+    - name: source_of_truth
+      type: string
+      description: Django runtime execution path for auth domain behavior.
+    - name: in_scope_endpoints
+      type: array
+      description: Full set of auth/member endpoints that must be reproduced first.
+    - name: http_contract
+      type: object
+      description: Request and response contract including status, body, headers, cookies, and auth semantics.
+    - name: side_effects
+      type: object
+      description: DB mutations, token persistence, email sending, and related entity creation.
+    - name: verification
+      type: object
+      description: Django-vs-Go parity comparison criteria and tests.
+
+evaluation_principles:
+  - name: exact_behavior_parity
+    weight: 0.45
+    description: Prefer identical runtime behavior over design improvements.
+  - name: contract_fidelity
+    weight: 0.30
+    description: Preserve every observable HTTP and non-HTTP contract detail.
+  - name: side_effect_fidelity
+    weight: 0.15
+    description: Preserve DB and external integration results exactly.
+  - name: migration_focus
+    weight: 0.10
+    description: Keep scope restricted to auth-first migration until parity is complete.
+
+exit_conditions:
+  - name: auth_endpoints_parity_verified
+    description: All in-scope Django auth/member endpoints are implemented in Go with parity verified.
+    criteria: Every in-scope auth/member endpoint passes Django-vs-Go parity verification.
+  - name: contract_test_suite_green
+    description: Contract tests for success, failure, auth, cookie, token, and side-effect scenarios all pass.
+    criteria: Django-vs-Go contract test suite reports zero failures for the auth domain.
+  - name: no_known_auth_contract_drift
+    description: No known contract drift remains in the auth domain behavior.
+    criteria: No open parity gaps remain for status, body, headers, cookies, or side effects.
+  - name: non_auth_domains_deferred
+    description: Remaining domains stay explicitly deferred until auth parity is complete.
+    criteria: Work output remains restricted to the auth/member domain only.
+
+metadata:
+  ambiguity_score: 0.15
+  interview_id: interview_20260323_084612
+  source: manual_seed_from_interview
+  created_at: 2026-03-23T18:00:00+09:00
+  note: >
+    Generated manually because `ouroboros_generate_seed` failed with an internal ambiguity scoring parse error.

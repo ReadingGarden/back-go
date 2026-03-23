@@ -6,6 +6,7 @@ import (
 	"github.com/ReadingGarden/back-go/internal/app"
 	"github.com/ReadingGarden/back-go/internal/config"
 	applog "github.com/ReadingGarden/back-go/internal/logger"
+	"github.com/joho/godotenv"
 )
 
 // @title           ReadingGarden API
@@ -13,6 +14,8 @@ import (
 // @description     Gin + sqlc migration backend for ReadingGarden.
 // @BasePath        /api/v1
 func main() {
+	_ = godotenv.Load(".env")
+
 	cfg := config.Load()
 	logger := applog.New(cfg)
 	slog.SetDefault(logger)
